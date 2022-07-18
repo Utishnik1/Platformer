@@ -21,7 +21,7 @@ char Map[MapHeight][MapWeight+1];
 
 void Init() {
 	for (int i = 0;i < MapWeight;i++)
-		Map[0][i] = ' ';
+		Map[0][i] = '.';
 	Map[0][MapWeight] = '\0';
 
 	for (int i = 1;i < MapHeight;i++) {
@@ -39,7 +39,7 @@ BOOL IsPosInMap(int x, int y) {
 	return (x>=0) && (x<MapWeight) && (y>=0) && (y<MapHeight);
 }
 BOOL Collision(OBJECT obj,OBJECT obj2) {
-	return 
+	return ((obj2.x < (obj.x + obj.weight)) && (obj.x < (obj2.x + obj2.weight)) && (obj2.y < (obj.y + obj.height)) && (obj.y < (obj2.y + obj2.height)));
 }
 
 void PutObject(OBJECT obj) {
@@ -63,6 +63,10 @@ void InitObject(OBJECT *obj,float x,float y,float weight,float height) {
 void VertMoveObject(OBJECT *obj) {
 	(*obj).y += (*obj).VertSpeed;
 	(*obj).VertSpeed += 0.05;
+	if (Collision(Player, Brick[0])) {
+		(*obj).y -= (*obj).VertSpeed;
+		(*obj).VertSpeed = 0;
+	}
 }
 
 void Show() {
@@ -83,6 +87,8 @@ int main()
 	InitObject(&Brick[0], 0, 44, 50, 6);
 	do {
 		Init();
+		if (GetKeyState(VK_SPACE) < 0)
+			Player.VertSpeed = -0.7;
 		VertMoveObject(&Player);
 		PutObject(Player);
 		PutObject(Brick[0]);
