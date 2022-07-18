@@ -5,6 +5,8 @@
 #include <Windows.h>
 
 #pragma warning(disable : 4996)
+#pragma warning(disable : 6308) 
+
 
 #define MapWeight 120
 #define MapHeight 50
@@ -14,6 +16,7 @@ typedef struct {
 	float VertSpeed;
 	float weight, height;
 	BOOL IsFly;
+	char Type;
 }OBJECT;
 
 OBJECT Player;
@@ -24,7 +27,7 @@ char Map[MapHeight][MapWeight + 1];
 
 void Init() {
 	for (int i = 0;i < MapWeight;i++)
-		Map[0][i] = '.';
+		Map[0][i] = ' ';
 	Map[0][MapWeight] = '\0';
 
 	for (int i = 1;i < MapHeight;i++) {
@@ -54,37 +57,55 @@ void PutObject(OBJECT obj) {
 	for (int i = iy;i < iy + iHeight;i++)
 		for (int j = ix;j < ix + iWeight;j++)
 			if (IsPosInMap(j, i))
-				Map[i][j] = '#';
+				Map[i][j] = obj.Type;
 }
 
-void InitObject(OBJECT* obj, float x, float y, float weight, float height) {
+void InitObject(OBJECT* obj, float x, float y, float weight, float height,char Type) {
 	ObjectSetPos(obj, x, y);
 	(*obj).weight = weight;
 	(*obj).height = height;
 	(*obj).VertSpeed = 0;
+	(*obj).Type = Type;
 }
 void CreateLevel() 
 {
-	InitObject(&Player, 20, 30, 5, 2.5);
-	BrickLenght = 2;
-	Brick = malloc(sizeof(Brick) * BrickLenght);
-	InitObject(Brick, 0, 44, 50, 6);
-	InitObject(Brick+1, 53, 40, 35, 6);
+	InitObject(&Player, 20, 30, 5, 2.5,'#');
+	BrickLenght = 3;
+	Brick = realloc(Brick,sizeof(Brick) * BrickLenght);
+	InitObject(Brick, 0, 44, 50, 6,'#');
+	InitObject(Brick+1, 53, 40, 35, 6,'#');
+	InitObject(Brick+2, 90, 38, 35, 6,'+');
 }
 
 void VertMoveObject(OBJECT* obj) {
 	(*obj).IsFly = TRUE;
 	(*obj).y += (*obj).VertSpeed;
-	(*obj).VertSpeed += 0.05;
+	(*obj).VertSpeed += 0.05f;
 	for(int i=0;i<BrickLenght;i++)
 		if (Collision(Player, Brick[i])) {
+			if (Brick[i].Type == '+')
+			{
+				system("cls");
+				printf("\n\n\n\n\n\n\n\n\n\t\t\t\t\t\t\tWIN!!!!!!!!\n");
+				Sleep(1000);
+				CreateLevel();
+			}
 			(*obj).y -= (*obj).VertSpeed;
 			(*obj).VertSpeed = 0;
 			(*obj).IsFly = FALSE;
+			break;
 		}
 }
 
 void MoveMap(int dx) {
+	Player.x -= dx;
+	for(int i=0;i<BrickLenght;i++)
+		if (Collision(Player, Brick[i]))
+		{
+			Player.x += dx;
+			return;
+		}
+	Player.x += dx;
 	for(int i=0;i<BrickLenght;i++)
 		Brick[i].x += dx;
 }
@@ -110,6 +131,8 @@ int main()
 			Player.VertSpeed = -1;
 		if (GetKeyState('A')<0) MoveMap(1);
 		if (GetKeyState('D')<0) MoveMap(-1);
+
+		if (Player.y > MapHeight) CreateLevel();
 		VertMoveObject(&Player);
 		PutObject(Player);
 		for(int i=0;i<BrickLenght;i++)
