@@ -17,7 +17,11 @@ typedef struct {
 	float weight, height;
 	BOOL IsFly;
 	char Type;
+	float horizontalspeed;
 }OBJECT;
+
+OBJECT* moving = NULL;
+int lenMoving = 1;
 
 OBJECT Player;
 int BrickLenght = 1;
@@ -27,7 +31,7 @@ char Map[MapHeight][MapWeight + 1];
 
 void Init() {
 	for (int i = 0;i < MapWeight;i++)
-		Map[0][i] = ' ';
+		Map[0][i] = '.';
 	Map[0][MapWeight] = '\0';
 
 	for (int i = 1;i < MapHeight;i++) {
@@ -66,23 +70,49 @@ void InitObject(OBJECT* obj, float x, float y, float weight, float height,char T
 	(*obj).height = height;
 	(*obj).VertSpeed = 0;
 	(*obj).Type = Type;
+	(*obj).horizontalspeed = 1;
+}
+
+void VertMoveObject(OBJECT* obj);
+
+
+void HorizontalObjectMove(OBJECT* obj) {
+	(*obj).x += (*obj).horizontalspeed;
+
+	for (int i = 0;i < BrickLenght;i++) {
+		if (Collision((*obj), Brick[i]))
+		{
+			(*obj).x -= (*obj).horizontalspeed;
+			(*obj).horizontalspeed = (*obj).horizontalspeed * (-1);
+		}
+	}
+	OBJECT Tobj = *obj;
+	VertMoveObject(&Tobj);
+	if (Tobj.IsFly == TRUE) {
+		(*obj).x -= (*obj).horizontalspeed;
+		(*obj).horizontalspeed = (-1) * (*obj).horizontalspeed;
+	}
 }
 void CreateLevel() 
 {
 	InitObject(&Player, 20, 30, 5, 2.5,'#');
 	BrickLenght = 3;
-	Brick = realloc(Brick,sizeof(Brick) * BrickLenght);
+	lenMoving = 1;
+	Brick = realloc(Brick,sizeof(*Brick) * BrickLenght);
+	moving = realloc(moving, sizeof(*moving) * lenMoving);
 	InitObject(Brick, 0, 44, 50, 6,'#');
 	InitObject(Brick+1, 53, 40, 35, 6,'#');
 	InitObject(Brick+2, 90, 38, 35, 6,'+');
+
+	InitObject(moving, 0, 35, 4, 2, '0');
 }
 
 void VertMoveObject(OBJECT* obj) {
 	(*obj).IsFly = TRUE;
-	(*obj).y += (*obj).VertSpeed;
 	(*obj).VertSpeed += 0.05f;
+	(*obj).y += (*obj).VertSpeed;
 	for(int i=0;i<BrickLenght;i++)
-		if (Collision(Player, Brick[i])) {
+		if (Collision(*obj, Brick[i])) {
 			if (Brick[i].Type == '+')
 			{
 				system("cls");
@@ -106,8 +136,10 @@ void MoveMap(int dx) {
 			return;
 		}
 	Player.x += dx;
-	for(int i=0;i<BrickLenght;i++)
+	for (int i = 0;i < BrickLenght;i++) 
 		Brick[i].x += dx;
+	for (int i = 0;i < lenMoving;i++)
+		moving[i].x += dx;
 }
 
 void Show() {
@@ -124,11 +156,13 @@ void SetCur(int x, int y) {
 
 int main()
 {
+	
+	
 	CreateLevel();
 	do {
-		Init();
+		Init();//////////////////////////////////---
 		if (GetKeyState(VK_SPACE) < 0 && Player.IsFly == FALSE)
-			Player.VertSpeed = -1;
+			Player.VertSpeed = -0.7;
 		if (GetKeyState('A')<0) MoveMap(1);
 		if (GetKeyState('D')<0) MoveMap(-1);
 
@@ -137,8 +171,26 @@ int main()
 		PutObject(Player);
 		for(int i=0;i<BrickLenght;i++)
 			PutObject(Brick[i]);
+		for (int i = 0;i < lenMoving;i++) {
+			VertMoveObject(moving+i);
+			HorizontalObjectMove(moving + i);
+			PutObject(moving[i]);
+		}
 		SetCur(0, 0);
 		Show();
-		Sleep(10);
+ 		Sleep(10);
 	} while (GetKeyState(VK_ESCAPE) >= 0);
+
+	
+	/*
+	float x = 0.7;
+	int y=0;
+	for (int i = 0;i < 20;i++)
+	{
+		y += (int)round(x);
+		printf("%d %f %d\n", i, x, y);
+		x -= 0.05;
+	}
+	*/
+
 }
